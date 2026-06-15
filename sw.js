@@ -3,7 +3,7 @@
 // Offline-first caching strategy
 // ──────────────────────────────────────────
 
-const CACHE_NAME = 'research-memo-v1';
+const CACHE_NAME = 'research-memo-v2';
 const ASSETS = [
   './',
   './index.html',
