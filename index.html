@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>科研备忘录 · Research Memo</title>
+  <meta name="description" content="科研备忘录 - 记录你的科研灵感与实验笔记" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#a78bfa" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="科研备忘录" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ===== 侧边栏 ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">🔬</span>
+        <h1>科研备忘录</h1>
+      </div>
+      <button class="btn-icon sidebar-close" id="sidebarClose" aria-label="关闭侧边栏">✕</button>
+    </div>
+
+    <button class="btn-new-memo" id="btnNewMemo">
+      <span class="plus-icon">＋</span>
+      新建备忘
+    </button>
+
+    <div class="sidebar-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="搜索备忘录…" autocomplete="off" />
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <h3 class="nav-title">分类</h3>
+        <ul class="nav-list" id="categoryList">
+          <li class="nav-item active" data-category="all">
+            <span class="nav-dot" style="background:#a78bfa"></span>全部备忘
+            <span class="nav-count" id="countAll">0</span>
+          </li>
+          <li class="nav-item" data-category="idea">
+            <span class="nav-dot" style="background:#f472b6"></span>灵感想法
+            <span class="nav-count" id="countIdea">0</span>
+          </li>
+          <li class="nav-item" data-category="experiment">
+            <span class="nav-dot" style="background:#34d399"></span>实验记录
+            <span class="nav-count" id="countExperiment">0</span>
+          </li>
+          <li class="nav-item" data-category="literature">
+            <span class="nav-dot" style="background:#60a5fa"></span>文献笔记
+            <span class="nav-count" id="countLiterature">0</span>
+          </li>
+          <li class="nav-item" data-category="todo">
+            <span class="nav-dot" style="background:#fbbf24"></span>待办事项
+            <span class="nav-count" id="countTodo">0</span>
+          </li>
+          <li class="nav-item" data-category="meeting">
+            <span class="nav-dot" style="background:#fb923c"></span>会议纪要
+            <span class="nav-count" id="countMeeting">0</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-section">
+        <h3 class="nav-title">优先级</h3>
+        <ul class="nav-list" id="priorityList">
+          <li class="nav-item" data-priority="high">
+            <span class="priority-badge high">!!!</span>高优先
+          </li>
+          <li class="nav-item" data-priority="medium">
+            <span class="priority-badge medium">!!</span>中优先
+          </li>
+          <li class="nav-item" data-priority="low">
+            <span class="priority-badge low">!</span>低优先
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-export" id="btnExport" title="导出全部为 JSON">📥 导出数据</button>
+      <button class="btn-import" id="btnImport" title="导入 JSON 数据">📤 导入数据</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" />
+    </div>
+  </aside>
+
+  <!-- ===== 主内容 ===== -->
+  <main class="main" id="main">
+    <header class="topbar">
+      <button class="btn-icon" id="sidebarToggle" aria-label="切换侧边栏">☰</button>
+      <div class="topbar-title" id="topbarTitle">全部备忘</div>
+      <div class="topbar-actions">
+        <div class="view-switcher">
+          <button class="btn-view active" id="btnGridView" title="卡片视图">▦</button>
+          <button class="btn-view" id="btnListView" title="列表视图">☰</button>
+        </div>
+        <div class="sort-dropdown">
+          <button class="btn-sort" id="btnSort">排序 ▾</button>
+          <div class="sort-menu" id="sortMenu">
+            <button data-sort="newest">最新优先</button>
+            <button data-sort="oldest">最早优先</button>
+            <button data-sort="priority">优先级排序</button>
+            <button data-sort="alpha">按标题排序</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 空状态 -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-illustration">📝</div>
+      <h2>还没有备忘录</h2>
+      <p>点击「新建备忘」开始记录你的科研灵感吧</p>
+      <button class="btn-new-memo" id="btnNewMemoEmpty">
+        <span class="plus-icon">＋</span>新建备忘
+      </button>
+    </div>
+
+    <!-- 备忘列表 -->
+    <div class="memo-grid" id="memoGrid"></div>
+  </main>
+
+  <!-- ===== 编辑弹窗 ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="memoModal">
+      <div class="modal-header">
+        <h2 id="modalTitle">新建备忘</h2>
+        <button class="btn-icon modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="memoTitleInput">标题</label>
+          <input type="text" id="memoTitleInput" placeholder="输入备忘标题…" maxlength="120" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="memoCategorySelect">分类</label>
+            <select id="memoCategorySelect">
+              <option value="idea">💡 灵感想法</option>
+              <option value="experiment">🧪 实验记录</option>
+              <option value="literature">📖 文献笔记</option>
+              <option value="todo">✅ 待办事项</option>
+              <option value="meeting">📋 会议纪要</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="memoPrioritySelect">优先级</label>
+            <select id="memoPrioritySelect">
+              <option value="low">低</option>
+              <option value="medium" selected>中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="memoStatusSelect">状态</label>
+            <select id="memoStatusSelect">
+              <option value="active">进行中</option>
+              <option value="completed">已完成</option>
+              <option value="archived">已归档</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="memoTagsInput">标签 <small>（用逗号分隔）</small></label>
+          <input type="text" id="memoTagsInput" placeholder="例如：机器学习, 蛋白质折叠" />
+        </div>
+
+        <div class="form-group form-group-grow">
+          <label>内容 <small>（支持 Markdown）</small></label>
+          <div class="editor-toolbar">
+            <button type="button" data-md="**" title="加粗">B</button>
+            <button type="button" data-md="*" title="斜体"><i>I</i></button>
+            <button type="button" data-md="~~" title="删除线"><s>S</s></button>
+            <span class="toolbar-sep"></span>
+            <button type="button" data-md="heading" title="标题">H</button>
+            <button type="button" data-md="ul" title="无序列表">•</button>
+            <button type="button" data-md="ol" title="有序列表">1.</button>
+            <button type="button" data-md="task" title="任务列表">☑</button>
+            <span class="toolbar-sep"></span>
+            <button type="button" data-md="code" title="行内代码">&lt;/&gt;</button>
+            <button type="button" data-md="codeblock" title="代码块">{ }</button>
+            <button type="button" data-md="link" title="链接">🔗</button>
+            <button type="button" data-md="table" title="表格">⊞</button>
+          </div>
+          <textarea id="memoContentInput" placeholder="在这里记录你的备忘内容…&#10;&#10;支持 Markdown 语法：&#10;# 标题&#10;**加粗** *斜体*&#10;- 列表项&#10;`代码`"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancel">取消</button>
+        <button class="btn-danger" id="btnDelete" style="display:none">删除</button>
+        <button class="btn-primary" id="btnSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 详情弹窗 ===== -->
+  <div class="modal-overlay" id="detailOverlay">
+    <div class="modal modal-detail" id="detailModal">
+      <div class="modal-header">
+        <h2 id="detailTitle">备忘详情</h2>
+        <div class="detail-actions">
+          <button class="btn-icon" id="detailEdit" title="编辑">✏️</button>
+          <button class="btn-icon modal-close" id="detailClose">✕</button>
+        </div>
+      </div>
+      <div class="detail-meta" id="detailMeta"></div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- ===== 确认对话框 ===== -->
+  <div class="modal-overlay" id="confirmOverlay">
+    <div class="modal modal-confirm">
+      <div class="confirm-icon">⚠️</div>
+      <h3>确认删除</h3>
+      <p id="confirmMsg">确定要删除这条备忘录吗？此操作不可撤销。</p>
+      <div class="confirm-actions">
+        <button class="btn-secondary" id="confirmCancel">取消</button>
+        <button class="btn-danger" id="confirmDelete">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Toast 通知 ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+  <script>
+    // Register Service Worker for PWA / offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
+          .catch(err => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

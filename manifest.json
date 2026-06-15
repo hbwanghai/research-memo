@@ -1,0 +1,20 @@
+{
+  "name": "科研备忘录",
+  "short_name": "科研备忘",
+  "description": "记录你的科研灵感、实验笔记与文献摘要",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#a78bfa",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "education"],
+  "lang": "zh-CN"
+}
