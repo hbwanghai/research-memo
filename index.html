@@ -83,6 +83,14 @@
       </div>
     </nav>
 
+    <div class="sidebar-sync">
+      <button class="btn-sync" id="btnSync" title="同步到云端">
+        <span class="sync-icon" id="syncIcon">☁️</span>
+        <span id="syncLabel">云端同步</span>
+      </button>
+      <button class="btn-icon" id="btnSyncSettings" title="同步设置">⚙️</button>
+    </div>
+
     <div class="sidebar-footer">
       <button class="btn-export" id="btnExport" title="导出全部为 JSON">📥 导出数据</button>
       <button class="btn-import" id="btnImport" title="导入 JSON 数据">📤 导入数据</button>
@@ -225,6 +233,52 @@
       <div class="confirm-actions">
         <button class="btn-secondary" id="confirmCancel">取消</button>
         <button class="btn-danger" id="confirmDelete">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 同步设置弹窗 ===== -->
+  <div class="modal-overlay" id="syncSettingsOverlay">
+    <div class="modal modal-sync-settings">
+      <div class="modal-header">
+        <h2>☁️ 云端同步设置</h2>
+        <button class="btn-icon modal-close" id="syncSettingsClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sync-info-card">
+          <p>使用 GitHub Gist 在多设备间同步备忘录数据。</p>
+          <p class="text-muted">Token 仅保存在本设备，不会上传。每个设备都需要单独配置。</p>
+        </div>
+        <div class="form-group">
+          <label for="syncTokenInput">GitHub Personal Access Token</label>
+          <div class="token-input-wrapper">
+            <input type="password" id="syncTokenInput" placeholder="ghp_xxxxxxxxxxxx" />
+            <button class="btn-icon" id="toggleTokenVisibility" title="显示/隐藏">👁️</button>
+          </div>
+          <small class="text-muted">需要 <code>gist</code> 权限。<a href="https://github.com/settings/tokens/new?scopes=gist&description=research-memo-sync" target="_blank">点击创建 →</a></small>
+        </div>
+        <div class="form-group">
+          <label for="syncGistIdInput">Gist ID <small>（首次同步会自动创建，或填入已有 ID）</small></label>
+          <input type="text" id="syncGistIdInput" placeholder="留空则自动创建新 Gist" />
+        </div>
+        <div class="sync-status-card" id="syncStatusCard" style="display:none">
+          <div class="sync-status-row">
+            <span>状态</span>
+            <span id="syncStatusText">未连接</span>
+          </div>
+          <div class="sync-status-row">
+            <span>上次同步</span>
+            <span id="lastSyncTime">从未</span>
+          </div>
+          <div class="sync-status-row">
+            <span>Gist ID</span>
+            <span id="displayGistId">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="syncSettingsCancel">取消</button>
+        <button class="btn-primary" id="syncSettingsSave">保存设置</button>
       </div>
     </div>
   </div>
