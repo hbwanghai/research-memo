@@ -307,6 +307,7 @@
       toast('备忘已创建', 'success');
     }
     saveMemos(); renderMemos(); closeEditModal();
+    autoSync();
   }
 
   // ──────────── Detail Modal ────────────
@@ -339,6 +340,7 @@
       closeEditModal();
       detailOverlay.classList.remove('open');
       toast('备忘已删除', 'success');
+      autoSync();
     };
   }
 
@@ -399,6 +401,7 @@
         memos = [...memos, ...newMemos];
         saveMemos(); renderMemos();
         toast('已导入 ' + newMemos.length + ' 条备忘 (共 ' + data.length + ' 条)', 'success');
+        autoSync();
       } catch { toast('导入失败：文件格式不正确', 'error'); }
     };
     reader.readAsText(file);
@@ -407,6 +410,8 @@
   // ──────────── GitHub Gist Sync ────────────
   function getSyncToken() { return localStorage.getItem(SYNC_TOKEN_KEY) || ''; }
   function getSyncGistId() { return localStorage.getItem(SYNC_GIST_KEY) || ''; }
+
+  let autoSyncTimer = null;
 
   function setSyncingState(syncing) {
     isSyncing = syncing;
@@ -420,6 +425,42 @@
       syncIcon.textContent = '\u2601\uFE0F';
       syncLabel.textContent = '云端同步';
     }
+  }
+
+  /** Debounced auto-sync: triggers 1.5s after last data change */
+  function autoSync() {
+    if (!getSyncToken()) return;
+    clearTimeout(autoSyncTimer);
+    autoSyncTimer = setTimeout(() => {
+      if (!isSyncing) performSync(true);
+    }, 1500);
+  }
+
+  /** Auto-pull from Gist on page load (silent, no toast on empty) */
+  async function autoPull() {
+    const token = getSyncToken();
+    const gistId = getSyncGistId();
+    if (!token || !gistId) return;
+    if (isSyncing) return;
+    setSyncingState(true);
+    try {
+      const gist = await fetchGist(token, gistId);
+      if (gist && gist.files && gist.files[GIST_FILENAME]) {
+        let remoteMemos = [];
+        try { remoteMemos = JSON.parse(gist.files[GIST_FILENAME].content); if (!Array.isArray(remoteMemos)) remoteMemos = []; } catch { remoteMemos = []; }
+        if (remoteMemos.length > 0) {
+          const merged = mergeMemos(memos, remoteMemos);
+          if (merged.length !== memos.length || JSON.stringify(merged.map(m=>m.updatedAt).sort()) !== JSON.stringify(memos.map(m=>m.updatedAt).sort())) {
+            memos = merged; saveMemos(); renderMemos();
+            toast('已从云端同步 ' + merged.length + ' 条备忘', 'success');
+          }
+        }
+      }
+      localStorage.setItem(SYNC_LAST_KEY, Date.now().toString());
+      updateSyncStatus();
+    } catch (err) {
+      console.warn('[AutoPull] Error:', err);
+    } finally { setSyncingState(false); }
   }
 
   function mergeMemos(local, remote) {
@@ -466,9 +507,9 @@
     return resp.json();
   }
 
-  async function performSync() {
+  async function performSync(silent) {
     const token = getSyncToken();
-    if (!token) { toast('请先在同步设置中配置 Token', 'error'); openSyncSettings(); return; }
+    if (!token) { if (!silent) { toast('请先在同步设置中配置 Token', 'error'); openSyncSettings(); } return; }
     if (isSyncing) return;
     setSyncingState(true);
     try {
@@ -490,14 +531,16 @@
         localStorage.setItem(SYNC_GIST_KEY, gistId);
       }
       localStorage.setItem(SYNC_LAST_KEY, Date.now().toString());
-      toast('同步成功！共 ' + merged.length + ' 条备忘', 'success');
+      if (!silent) toast('同步成功！共 ' + merged.length + ' 条备忘', 'success');
       updateSyncStatus();
     } catch (err) {
       console.error('[Sync] Error:', err);
-      if (err.message && (err.message.includes('Bad credentials') || err.message.includes('401'))) {
-        toast('Token 无效或已过期，请更新', 'error');
-      } else {
-        toast('同步失败：' + (err.message || '未知错误'), 'error');
+      if (!silent) {
+        if (err.message && (err.message.includes('Bad credentials') || err.message.includes('401'))) {
+          toast('Token 无效或已过期，请更新', 'error');
+        } else {
+          toast('同步失败：' + (err.message || '未知错误'), 'error');
+        }
       }
     } finally { setSyncingState(false); }
   }
@@ -641,6 +684,8 @@
   // ──────────── Init ────────────
   function init() {
     loadMemos(); seedDemoData(); bindEvents(); renderMemos(); updateSyncStatus();
+    // Auto-pull from cloud on page load
+    autoPull();
   }
 
   init();
